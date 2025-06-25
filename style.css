@@ -75,10 +75,24 @@ body {
   padding: 20px;
   font-size: 18px;
   line-height: 1.5;
-  height: 250px;
+  height: 500px;
   overflow-y: auto;
   background: #fafafa;
   margin-bottom: 20px;
+}
+
+.chat-window h1, .chat-window h2, .chat-window h3 {
+  margin: 2px 0 1px 0;
+  font-weight: bold;
+}
+.chat-window ul {
+  margin: 2px 0 2px 6px;
+}
+.chat-window li {
+  margin-bottom: 1px;
+}
+.chat-window strong {
+  font-weight: bold;
 }
 
 /* placeholder message */
@@ -113,7 +127,7 @@ body {
 
 .chat-form button {
   font-size: 18px;
-  background: #000;
+  background: #ff003b;
   color: #fff;
   border: none;
   padding: 12px;
@@ -127,11 +141,11 @@ body {
 }
 
 .chat-form button:hover {
-  background: #666666;
+  background: #70001a;
 }
 
 .chat-form button:focus {
-  outline: 2px solid #000;
+  outline: 2px solid #70001a;
   outline-offset: 2px;
 }
 
@@ -179,13 +193,21 @@ body {
 }
 
 .product-card {
+  position: relative; /* Needed for overlay positioning */
   flex: 0 1 calc(33.333% - 14px);
-  border: 1px solid #ccc;
+  border: 2px solid #ccc;
   padding: 15px;
   border-radius: 4px;
   display: flex;
   gap: 15px;
   min-height: 160px;
+  transition: transform 0.2s;
+}
+
+.product-card.selected {
+  border-color: #ff003b;
+  transition: transform 0.2s;
+  transform: scale(1.05);
 }
 
 .product-card img {
@@ -213,6 +235,37 @@ body {
   color: #666;
 }
 
+/* product overlay */
+.product-overlay {
+  /* Hidden by default */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.918);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  padding: 20px;
+  border-radius: 4px;
+  text-align: center;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+.product-overlay p {
+  color: #fff;
+  font-size: 12px;
+}
+
+.product-card:hover .product-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* selected products */
 .selected-products {
   margin: 40px 0;
@@ -224,6 +277,15 @@ body {
 .selected-products h2 {
   font-size: 20px;
   margin-bottom: 20px;
+}
+
+.selected-product {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e9e9e9;
+  border-radius: 4px;
+  padding: 4px 8px;
 }
 
 #selectedProductsList {
@@ -239,7 +301,7 @@ body {
   font-size: 18px;
   font-weight: 500;
   color: #fff;
-  background: #000;
+  background: #ff003b;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -247,7 +309,7 @@ body {
 }
 
 .generate-btn:hover {
-  background: #666;
+  background: #70001a;
 }
 
 .generate-btn i {
