@@ -315,3 +315,18 @@ body {
 .generate-btn i {
   margin-right: 8px;
 }
+
+/* RTL support */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .products-grid {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .chatbox,
+[dir="rtl"] .chat-window {
+  text-align: right;
+}

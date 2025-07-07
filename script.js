@@ -1,14 +1,50 @@
+// --- RTL Language Auto-Detection ---
+
+// Wait until the DOM is loaded before setting direction
+document.addEventListener("DOMContentLoaded", function () {
+  // List of RTL language codes
+  const rtlLangs = ["ar", "he", "fa", "ur"];
+  
+  // Get the browser's language (e.g., "en", "ar", "he")
+  const userLang = navigator.language || navigator.userLanguage;
+  const langCode = userLang.split('-')[0]; // Get the main part, e.g., "ar" from "ar-SA"
+
+  // Set the lang attribute on the <html> tag
+  document.documentElement.lang = langCode;
+
+  // If the language is RTL, set dir="rtl", otherwise set dir="ltr"
+  if (rtlLangs.includes(langCode)) {
+    document.documentElement.dir = "rtl";
+  } else {
+    document.documentElement.dir = "ltr";
+  }
+});
+
 /* Get references to DOM elements */
 const categoryFilter = document.getElementById("categoryFilter");
 const productsContainer = document.getElementById("productsContainer");
 const chatForm = document.getElementById("chatForm");
 const chatWindow = document.getElementById("chatWindow");
+const searchInput = document.createElement("input");
+searchInput.type = "text";
+searchInput.id = "productSearch";
+searchInput.placeholder = "Search products by name or keyword...";
+// Add some basic styling for the search box
+searchInput.style.width = "100%";
+searchInput.style.padding = "12px";
+searchInput.style.margin = "10px 0";
+searchInput.style.fontSize = "16px";
+searchInput.style.border = "2px solid #ccc";
+searchInput.style.borderRadius = "8px";
 
 // Array to hold selected products
 let selectedProducts = [];
 
 // Array to hold the full chat conversation history
 let messages = [];
+
+// Store all loaded products for filtering
+let allProducts = [];
 
 /* Show initial placeholder until user selects a category */
 productsContainer.innerHTML = `
@@ -28,7 +64,10 @@ async function generateRoutineWithMistral(selectedProducts) {
 
   // Reset the messages array for a new routine
   messages = [];
-  messages.push({ role: "user", content: userPrompt });
+  messages.push(
+    { role: "system", content: "You are a helpful skincare and haircare advisor. Only answer questions about routines, products, and beauty advice. Stay on topic and do not answer unrelated questions." },
+    { role: "user", content: userPrompt }
+  );
 
   // Prepare the request body with only the messages array
   const requestBody = {
@@ -121,6 +160,65 @@ async function handleChatFollowUp(userInput) {
     chatWindow.innerHTML += `<p>Error: ${error.message}</p>`;
   }
 }
+
+/* 
+  --- Product Search Feature ---
+  This code adds a search box above the products grid.
+  Users can type to filter products by name, brand, or description.
+  The search works together with the category filter.
+*/
+
+// Insert the search input above the products grid
+const productsSection = document.getElementById("productsContainer");
+productsSection.parentNode.insertBefore(searchInput, productsSection);
+
+// 4. Load all products on page load and set up filters
+window.addEventListener("DOMContentLoaded", async () => {
+  allProducts = await loadProducts();
+  displayProducts(allProducts);
+
+  // Restore selected products from localStorage if any
+  const saved = localStorage.getItem("selectedProducts");
+  if (saved) {
+    selectedProducts = JSON.parse(saved);
+    displaySelectedProducts();
+  }
+});
+
+// 5. Filter products by category and search input
+async function filterAndDisplayProducts() {
+  // If products haven't loaded yet, load them
+  if (allProducts.length === 0) {
+    allProducts = await loadProducts();
+  }
+  const selectedCategory = categoryFilter.value;
+  const searchValue = searchInput.value.toLowerCase();
+
+  // Start with all products
+  let filtered = allProducts;
+
+  // Filter by category if one is selected
+  if (selectedCategory) {
+    filtered = filtered.filter(
+      (product) => product.category === selectedCategory
+    );
+  }
+
+  // Further filter by search keyword
+  if (searchValue) {
+    filtered = filtered.filter((product) =>
+      product.name.toLowerCase().includes(searchValue) ||
+      product.brand.toLowerCase().includes(searchValue) //||
+      //(product.description && product.description.toLowerCase().includes(searchValue))
+    );
+  }
+
+  displayProducts(filtered);
+}
+
+// 6. Listen for changes in the category filter and search input
+categoryFilter.addEventListener("change", filterAndDisplayProducts);
+searchInput.addEventListener("input", filterAndDisplayProducts);
 
 // Add event listener to the Generate Routine button
 const generateRoutineBtn = document.getElementById("generateRoutine");
