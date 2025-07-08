@@ -1,25 +1,3 @@
-// --- RTL Language Auto-Detection ---
-
-// Wait until the DOM is loaded before setting direction
-document.addEventListener("DOMContentLoaded", function () {
-  // List of RTL language codes
-  const rtlLangs = ["ar", "he", "fa", "ur"];
-  
-  // Get the browser's language (e.g., "en", "ar", "he")
-  const userLang = navigator.language || navigator.userLanguage;
-  const langCode = userLang.split('-')[0]; // Get the main part, e.g., "ar" from "ar-SA"
-
-  // Set the lang attribute on the <html> tag
-  document.documentElement.lang = langCode;
-
-  // If the language is RTL, set dir="rtl", otherwise set dir="ltr"
-  if (rtlLangs.includes(langCode)) {
-    document.documentElement.dir = "rtl";
-  } else {
-    document.documentElement.dir = "ltr";
-  }
-});
-
 /* Get references to DOM elements */
 const categoryFilter = document.getElementById("categoryFilter");
 const productsContainer = document.getElementById("productsContainer");
@@ -54,7 +32,7 @@ productsContainer.innerHTML = `
 `;
 
 // Add code here
-async function generateRoutineWithMistral(selectedProducts) {
+async function generateRoutineWithOpenAI(selectedProducts) {
   // Show a loading message while waiting for the AI response
   chatWindow.innerHTML = "<p>Generating your routine... Please wait.</p>";
 
@@ -65,27 +43,24 @@ async function generateRoutineWithMistral(selectedProducts) {
   // Reset the messages array for a new routine
   messages = [];
   messages.push(
-    { role: "system", content: "You are a helpful skincare and haircare advisor. Only answer questions about routines, products, and beauty advice. Stay on topic and do not answer unrelated questions." },
+    // { role: "system", content: "You are a helpful skincare and haircare advisor. Only answer questions about routines, products, and beauty advice. Stay on topic and do not answer unrelated questions." },
     { role: "user", content: userPrompt }
   );
 
   // Prepare the request body with only the messages array
   const requestBody = {
-    model: "mistral-small-latest", // or the model you want to use
+    model: "gpt-4o-search-preview",
     messages: messages,
     max_tokens: 800,
-    temperature: 0.5,
-    frequency_penalty: 0.8,
   };
 
   try {
     // Send the request directly to the Mistral API with your API key
-    const apiUrl = "https://skincare-advice.romanmgaranzuay.workers.dev/";
+    const apiUrl = "https://lorealchatbot.romanmgaranzuay.workers.dev/";
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        //Authorization: `Bearer ${MISTRAL_API_KEY}`,
       },
       body: JSON.stringify(requestBody),
     });
@@ -122,16 +97,14 @@ async function handleChatFollowUp(userInput) {
 
   // Prepare the request body with the updated messages array
   const requestBody = {
-    model: "mistral-small-latest",
+    model: "gpt-4o-search-preview",
     messages: messages,
     max_tokens: 800,
-    temperature: 0.5,
-    frequency_penalty: 0.8,
   };
 
   try {
     // Send the request to the API
-    const apiUrl = "https://skincare-advice.romanmgaranzuay.workers.dev/";
+    const apiUrl = "https://lorealchatbot.romanmgaranzuay.workers.dev/";
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -172,19 +145,6 @@ async function handleChatFollowUp(userInput) {
 const productsSection = document.getElementById("productsContainer");
 productsSection.parentNode.insertBefore(searchInput, productsSection);
 
-// 4. Load all products on page load and set up filters
-window.addEventListener("DOMContentLoaded", async () => {
-  allProducts = await loadProducts();
-  displayProducts(allProducts);
-
-  // Restore selected products from localStorage if any
-  const saved = localStorage.getItem("selectedProducts");
-  if (saved) {
-    selectedProducts = JSON.parse(saved);
-    displaySelectedProducts();
-  }
-});
-
 // 5. Filter products by category and search input
 async function filterAndDisplayProducts() {
   // If products haven't loaded yet, load them
@@ -206,10 +166,10 @@ async function filterAndDisplayProducts() {
 
   // Further filter by search keyword
   if (searchValue) {
-    filtered = filtered.filter((product) =>
-      product.name.toLowerCase().includes(searchValue) ||
-      product.brand.toLowerCase().includes(searchValue) //||
-      //(product.description && product.description.toLowerCase().includes(searchValue))
+    filtered = filtered.filter(
+      (product) =>
+        product.name.toLowerCase().includes(searchValue) ||
+        product.brand.toLowerCase().includes(searchValue) //||
     );
   }
 
@@ -229,7 +189,7 @@ generateRoutineBtn.addEventListener("click", () => {
       "<p>Please select at least one product to generate a routine.</p>";
     return;
   }
-  generateRoutineWithMistral(selectedProducts);
+  generateRoutineWithOpenAI(selectedProducts);
 });
 
 /* Load product data from JSON file */
@@ -404,6 +364,11 @@ function markdownToHtml(markdown) {
   // Convert bold (**text** or __text__)
   html = html.replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>");
   html = html.replace(/__(.*?)__/gim, "<strong>$1</strong>");
+  // Convert Markdown links [text](url) to HTML <a> tags
+  html = html.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/gim,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
   // Convert unordered lists
   html = html.replace(/^- (.*$)/gim, "<li>$1</li>");
   // Wrap <li> items in <ul>

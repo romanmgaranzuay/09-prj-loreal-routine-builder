@@ -14,25 +14,24 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    const apiKey = env.MISTRAL_API_KEY;
-    const apiUrl = "https://api.mistral.ai/v1/chat/completions";
+    const apiKey = env.OPENAI_API_KEY;
+    const apiUrl = "https://api.openai.com/v1/chat/completions";
     const userInput = await request.json();
 
     // Debug: Log the incoming request body
     console.log("Incoming request body:", userInput);
 
     const requestBody = {
-      model: "mistral-small-latest",
+      model: "gpt-4o-search-preview",
       messages: userInput.messages,
       max_tokens: 800,
-      temperature: 0.5,
-      frequency_penalty: 0.8,
     };
+
 
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
