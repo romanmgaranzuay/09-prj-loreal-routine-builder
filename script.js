@@ -19,7 +19,13 @@ searchInput.style.borderRadius = "8px";
 let selectedProducts = [];
 
 // Array to hold the full chat conversation history
-let messages = [];
+let messages = [
+  {
+    role: "system",
+    content:
+      "You are a helpful skincare and haircare advisor for L'Oréal products. You MUST only answer questions about beauty routines, skincare products, haircare products, and makeup advice. If someone asks about anything else (politics, sports, food, general topics, etc.), politely redirect them back to beauty topics by saying 'I can only help with skincare, haircare, and beauty advice. What would you like to know about your beauty routine?' Stay focused on beauty and L'Oréal product recommendations only.",
+  },
+];
 
 // Store all loaded products for filtering
 let allProducts = [];
@@ -40,12 +46,15 @@ async function generateRoutineWithOpenAI(selectedProducts) {
   const preferences = selectedProducts.map((p) => p.name).join(", ");
   const userPrompt = `Here are my favorite products: ${preferences}. Please generate a short skincare or haircare routine for me using these products.`;
 
-  // Reset the messages array for a new routine
-  messages = [];
-  messages.push(
-    // { role: "system", content: "You are a helpful skincare and haircare advisor. Only answer questions about routines, products, and beauty advice. Stay on topic and do not answer unrelated questions." },
-    { role: "user", content: userPrompt }
-  );
+  // Reset the messages array for a new routine but keep the system prompt
+  messages = [
+    {
+      role: "system",
+      content:
+        "You are a helpful skincare and haircare advisor for L'Oréal products. You MUST only answer questions about beauty routines, skincare products, haircare products, and makeup advice. If someone asks about anything else (politics, sports, food, general topics, etc.), politely redirect them back to beauty topics by saying 'I can only help with skincare, haircare, and beauty advice. What would you like to know about your beauty routine?' Stay focused on beauty and L'Oréal product recommendations only.",
+    },
+    { role: "user", content: userPrompt },
+  ];
 
   // Prepare the request body with only the messages array
   const requestBody = {
@@ -93,7 +102,7 @@ async function handleChatFollowUp(userInput) {
   messages.push({ role: "user", content: userInput });
 
   // Show a loading message while waiting for the AI response
-  chatWindow.innerHTML += `<p><em>AI is thinking...</em></p>`;
+  chatWindow.innerHTML += `<p><em>Responding to your question...</em></p>`;
 
   // Prepare the request body with the updated messages array
   const requestBody = {
@@ -134,13 +143,6 @@ async function handleChatFollowUp(userInput) {
   }
 }
 
-/* 
-  --- Product Search Feature ---
-  This code adds a search box above the products grid.
-  Users can type to filter products by name, brand, or description.
-  The search works together with the category filter.
-*/
-
 // Insert the search input above the products grid
 const productsSection = document.getElementById("productsContainer");
 productsSection.parentNode.insertBefore(searchInput, productsSection);
@@ -157,8 +159,8 @@ async function filterAndDisplayProducts() {
   // Start with all products
   let filtered = allProducts;
 
-  // Filter by category if one is selected
-  if (selectedCategory) {
+  // Show all products if "All" is selected or no category is selected
+  if (selectedCategory && selectedCategory !== "all") {
     filtered = filtered.filter(
       (product) => product.category === selectedCategory
     );
@@ -254,6 +256,14 @@ function displayProducts(products) {
 
 /* Load selected products from localStorage (if any) when the page loads */
 window.addEventListener("DOMContentLoaded", () => {
+  // Add "All" option if not already present
+  if (!categoryFilter.querySelector('option[value="all"]')) {
+    const allOption = document.createElement("option");
+    allOption.value = "all";
+    allOption.textContent = "All";
+    categoryFilter.insertBefore(allOption, categoryFilter.firstChild);
+  }
+
   const saved = localStorage.getItem("selectedProducts");
   if (saved) {
     // Parse the saved products and display them
@@ -327,20 +337,6 @@ function displaySelectedProducts() {
     });
   });
 }
-
-/* Filter and display products when category changes */
-categoryFilter.addEventListener("change", async (e) => {
-  const products = await loadProducts();
-  const selectedCategory = e.target.value;
-
-  /* filter() creates a new array containing only products 
-     where the category matches what the user selected */
-  const filteredProducts = products.filter(
-    (product) => product.category === selectedCategory
-  );
-
-  displayProducts(filteredProducts);
-});
 
 /* Chat form submission handler - placeholder for OpenAI integration */
 chatForm.addEventListener("submit", (e) => {
