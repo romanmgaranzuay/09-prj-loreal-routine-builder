@@ -15,6 +15,9 @@ searchInput.style.fontSize = "16px";
 searchInput.style.border = "2px solid #ccc";
 searchInput.style.borderRadius = "8px";
 
+// Set initial message
+chatWindow.textContent = "👋 Hello! How can I help you today?";
+
 // Array to hold selected products
 let selectedProducts = [];
 
@@ -39,8 +42,9 @@ productsContainer.innerHTML = `
 
 // Add code here
 async function generateRoutineWithOpenAI(selectedProducts) {
-  // Show a loading message while waiting for the AI response
-  chatWindow.innerHTML = "<p>Generating your routine... Please wait.</p>";
+  // Clear the initial greeting and show a loading message
+  chatWindow.innerHTML =
+    '<div class="msg ai loading">Generating your routine... Please wait.</div>';
 
   // Create a prompt using the selected product names
   const preferences = selectedProducts.map((p) => p.name).join(", ");
@@ -51,7 +55,7 @@ async function generateRoutineWithOpenAI(selectedProducts) {
     {
       role: "system",
       content:
-        "You are a helpful skincare and haircare advisor for L'Oréal products. You MUST only answer questions about beauty routines, skincare products, haircare products, and makeup advice. If someone asks about anything else (politics, sports, food, general topics, etc.), politely redirect them back to beauty topics by saying 'I can only help with skincare, haircare, and beauty advice. What would you like to know about your beauty routine?' Stay focused on beauty and L'Oréal product recommendations only.",
+        "You are the personification of L'Oréal, who doubles as a helpful skincare and haircare advisor for L'Oréal products. You MUST only answer questions about beauty routines, skincare products, haircare products, and makeup advice. If someone asks about anything else (politics, sports, food, general topics, etc.), politely redirect them back to beauty topics by saying 'I can only help with skincare, haircare, and beauty advice. What would you like to know about your beauty routine?' Stay focused on beauty and L'Oréal product recommendations only. I want the user to feel as if they are speaking directly to a personification of L'Oréal, who simply wants their customers to have knowledge and access to the best skincare and haircare.",
     },
     { role: "user", content: userPrompt },
   ];
@@ -82,18 +86,20 @@ async function generateRoutineWithOpenAI(selectedProducts) {
       const aiMessage = data.choices[0].message.content;
       // Convert Markdown to HTML for display
       const formatted = markdownToHtml(aiMessage);
-      chatWindow.innerHTML = formatted;
+      chatWindow.innerHTML = `<div class="msg ai"><strong>L'Oréal:</strong> ${formatted}</div>`;
       messages.push({ role: "assistant", content: aiMessage });
     } else {
       // Show an error if the response is not as expected
       chatWindow.innerHTML = `
-        <p>Sorry, I could not generate a routine. Please try again.</p>
-        <p><small>Debug info: ${JSON.stringify(data)}</small></p>
+        <div class="msg ai"><strong>L'Oréal:</strong> Sorry, I could not generate a routine. Please try again.</div>
+        <div class="msg ai"><small>Debug info: ${JSON.stringify(
+          data
+        )}</small></div>
       `;
     }
   } catch (error) {
     // Show an error message if something goes wrong
-    chatWindow.innerHTML = `<p>Error: ${error.message}</p>`;
+    chatWindow.innerHTML = `<div class="msg ai"><strong>L'Oréal:</strong> Error: ${error.message}</div>`;
   }
 }
 
@@ -101,8 +107,17 @@ async function handleChatFollowUp(userInput) {
   // Add the user's follow-up question to the messages array
   messages.push({ role: "user", content: userInput });
 
+  // Check if this is the first interaction and clear the greeting
+  const hasGreeting = chatWindow.textContent.includes(
+    "👋 Hello! How can I help you today?"
+  );
+  if (hasGreeting) {
+    chatWindow.innerHTML = "";
+  }
+
   // Show a loading message while waiting for the AI response
-  chatWindow.innerHTML += `<p><em>Responding to your question...</em></p>`;
+  chatWindow.innerHTML +=
+    '<div class="msg ai loading">One moment while I think of a response...</div>';
 
   // Prepare the request body with the updated messages array
   const requestBody = {
@@ -130,16 +145,27 @@ async function handleChatFollowUp(userInput) {
       const aiMessage = data.choices[0].message.content;
       // Convert Markdown to HTML for display
       const formatted = markdownToHtml(aiMessage);
-      chatWindow.innerHTML += `<div>${formatted}</div>`;
+      // Remove the loading message and add the AI response
+      const loadingMsg = chatWindow.querySelector(".msg.ai.loading");
+      if (loadingMsg) loadingMsg.remove();
+      chatWindow.innerHTML += `<div class="msg ai"><strong>L'Oréal:</strong> ${formatted}</div>`;
       messages.push({ role: "assistant", content: aiMessage });
     } else {
+      // Remove loading message and show error
+      const loadingMsg = chatWindow.querySelector(".msg.ai.loading");
+      if (loadingMsg) loadingMsg.remove();
       chatWindow.innerHTML += `
-        <p>Sorry, I could not answer your question. Please try again.</p>
-        <p><small>Debug info: ${JSON.stringify(data)}</small></p>
+        <div class="msg ai"><strong>L'Oréal:</strong> Sorry, I could not answer your question. Please try again.</div>
+        <div class="msg ai"><small>Debug info: ${JSON.stringify(
+          data
+        )}</small></div>
       `;
     }
   } catch (error) {
-    chatWindow.innerHTML += `<p>Error: ${error.message}</p>`;
+    // Remove loading message and show error
+    const loadingMsg = chatWindow.querySelector(".msg.ai.loading");
+    if (loadingMsg) loadingMsg.remove();
+    chatWindow.innerHTML += `<div class="msg ai"><strong>L'Oréal:</strong> Error: ${error.message}</div>`;
   }
 }
 
@@ -304,9 +330,11 @@ function displaySelectedProducts() {
     clearBtn = document.createElement("button");
     clearBtn.id = "clearAllBtn";
     clearBtn.textContent = "Clear All";
-    clearBtn.className = "generate-btn";
-    clearBtn.style.marginTop = "10px";
-    selectedProductsList.parentElement.appendChild(clearBtn);
+    clearBtn.className = "clear-all-btn";
+    // Remove margin and generate-btn class, position absolutely in parent
+    const selectedProductsBox = selectedProductsList.parentElement;
+    selectedProductsBox.style.position = "relative";
+    selectedProductsBox.appendChild(clearBtn);
     clearBtn.addEventListener("click", () => {
       selectedProducts = [];
       saveSelectedProducts();
@@ -343,8 +371,17 @@ chatForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const userInput = document.getElementById("userInput").value;
   if (!userInput.trim()) return;
-  // Show the user's question in the chat window
-  chatWindow.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
+
+  // Check if this is the first interaction and clear the greeting
+  const hasGreeting = chatWindow.textContent.includes(
+    "👋 Hello! How can I help you today?"
+  );
+  if (hasGreeting) {
+    chatWindow.innerHTML = "";
+  }
+
+  // Show the user's question in the chat window with bubble styling and bold label
+  chatWindow.innerHTML += `<div class="msg user"><strong>You:</strong> ${userInput}</div>`;
   document.getElementById("userInput").value = "";
   // Send the follow-up question to the AI
   handleChatFollowUp(userInput);
